@@ -2,6 +2,42 @@
 
 A community-focused networking solution for OpenWrt.
 
+## Installation
+
+### How to Install via LuCI Web Interface
+
+1. Add Custom Feed:
+   - Go to System → Software
+   - Click on "Configuration"
+   - Add the following feed under "Custom feeds":
+     ```
+     src/gz customrepo https://raw.githubusercontent.com/happynet-why/nclink/main/package
+     ```
+   - Click "Save & Apply"
+
+2. Install the Package:
+   - Click "Update Lists"
+   - Search for "luci-app-nclink"
+   - Click "Install"
+
+### Manual Installation
+
+You can also install the package manually via SSH:
+
+1. Add the custom repository:
+   ```bash
+   echo "src/gz customrepo https://raw.githubusercontent.com/happynet-why/nclink/main/package" >> /etc/opkg/customfeeds.conf
+   ```
+
+2. Update and install:
+   ```bash
+   opkg update
+   opkg install luci-app-nclink
+   ```
+
+
+
+
 ## Development Roadmap
 
 ### Week 1: Research & Initial Development
