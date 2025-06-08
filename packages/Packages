@@ -1,0 +1,55 @@
+Package: luci-app-nclink
+Version: 1.2-1
+Depends: libc, luci-base, lua, luci-lib-jsonc, luci-lib-httpclient, wireguard-tools, kmod-wireguard, xl2tpd, ppp, kmod-pppol2tp, kmod-pppox
+Source: feeds/base/luci-app-nclink
+SourceName: luci-app-nclink
+Section: luci
+SourceDateEpoch: 1749305116
+Architecture: aarch64_cortex-a53
+Installed-Size: 12839
+Description:  This package provides a simple "nclink" application for LuCI.
+
+Package: luci-app-nclink
+Version: 1.2-1
+Depends: libc, luci-base, lua, luci-lib-jsonc, luci-lib-httpclient, wireguard-tools, kmod-wireguard, xl2tpd, ppp, kmod-pppol2tp, kmod-pppox
+Source: feeds/base/luci-app-nclink
+SourceName: luci-app-nclink
+Section: luci
+SourceDateEpoch: 1749305116
+Architecture: arm_cortex-a7_neon-vfpv4
+Installed-Size: 12839
+Description:  This package provides a simple "nclink" application for LuCI.
+
+Package: luci-app-nclink
+Version: 1.2-1
+Depends: libc, luci-base, lua, luci-lib-jsonc, luci-lib-httpclient, wireguard-tools, kmod-wireguard, xl2tpd, ppp, kmod-pppol2tp, kmod-pppox
+Source: feeds/base/luci-app-nclink
+SourceName: luci-app-nclink
+Section: luci
+SourceDateEpoch: 1749305116
+Architecture: i386_pentium4
+Installed-Size: 12839
+Description:  This package provides a simple "nclink" application for LuCI.
+
+Package: luci-app-nclink
+Version: 1.2-1
+Depends: libc, luci-base, lua, luci-lib-jsonc, luci-lib-httpclient, wireguard-tools, kmod-wireguard, xl2tpd, ppp, kmod-pppol2tp, kmod-pppox
+Source: feeds/base/luci-app-nclink
+SourceName: luci-app-nclink
+Section: luci
+SourceDateEpoch: 1749305116
+Architecture: mips_24kc
+Installed-Size: 12839
+Description:  This package provides a simple "nclink" application for LuCI.
+
+Package: luci-app-nclink
+Version: 1.2-1
+Depends: libc, luci-base, lua, luci-lib-jsonc, luci-lib-httpclient, wireguard-tools, kmod-wireguard, xl2tpd, ppp, kmod-pppol2tp, kmod-pppox
+Source: feeds/base/luci-app-nclink
+SourceName: luci-app-nclink
+Section: luci
+SourceDateEpoch: 1749305116
+Architecture: mipsel_24kc
+Installed-Size: 12839
+Description:  This package provides a simple "nclink" application for LuCI.
+
