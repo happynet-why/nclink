@@ -4,6 +4,33 @@ A community-focused networking solution for OpenWrt.
 
 ## Installation
 
+### Quick Installation via SSH
+
+The easiest way to install NCLink is using our automated installation script. This script will automatically detect your device's architecture and install the correct package.
+
+1.  open the Terminal app on your device and SSH into your OpenWrt router buy typing the following command:
+   ```bash
+   ssh root@192.168.1.1 
+   ```
+
+2. Run the following command to download and execute the installation script:
+   ```bash
+   wget -O- https://raw.githubusercontent.com/happynet-why/nclink/main/install.sh | sh
+   ```
+
+   If wget is not available, you can use curl:
+   ```bash
+   curl -s https://raw.githubusercontent.com/happynet-why/nclink/main/install.sh | sh
+   ```
+
+The script will:
+- Detect your device's architecture
+- Download the appropriate package
+- Install NCLink automatically
+- Clean up temporary files
+
+After installation, you can access NCLink through the LuCI web interface under the Services menu.
+
 ### How to Install via LuCI Web Interface
 
 1. Add Custom Feed:
@@ -34,7 +61,6 @@ You can also install the package manually via SSH:
    opkg update
    opkg install luci-app-nclink
    ```
-
 
 
 
