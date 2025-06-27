@@ -8,24 +8,6 @@ NCLINK_VERSION_FILE="/.NCLINK"
 
 # Function to detect architecture
 detect_arch() {
-    # Check /proc/cpuinfo for architecture details
-    if grep -q "MIPS 24K" /proc/cpuinfo; then
-        if grep -q "little endian" /proc/cpuinfo; then
-            echo "mipsel_24kc"
-        else
-            echo "mips_24kc"
-        fi
-        return 0
-    elif grep -q "ARMv7" /proc/cpuinfo; then
-        echo "arm_cortex-a7_neon-vfpv4"
-        return 0
-    elif grep -q "aarch64" /proc/cpuinfo; then
-        echo "aarch64_cortex-a53"
-        return 0
-    elif grep -q "Intel" /proc/cpuinfo; then
-        echo "i386_pentium4"
-        return 0
-    fi
 
     # Fallback to uname if /proc/cpuinfo doesn't provide enough info
     local arch=$(uname -m)
@@ -34,7 +16,14 @@ detect_arch() {
             echo "mipsel_24kc"
             ;;
         "mips")
-            echo "mips_24kc"
+            # Test endianness to determine if it's mips or mipsel
+            echo -n -e '\x01\x00\x00\x00' > test.bin
+            if [ "$(hexdump -e '1/4 "%08x\n"' test.bin)" = "01000000" ]; then
+                echo "mips_24kc"
+            else
+                echo "mipsel_24kc" 
+            fi
+            rm -f test.bin
             ;;
         "aarch64")
             echo "aarch64_cortex-a53"
