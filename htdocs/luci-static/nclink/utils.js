@@ -25,3 +25,19 @@ async function uciCall( method , params ) {
         return false;
     }
 }
+
+async function uciCommit(config) {
+    await callUbus('uci', 'commit', {config: config}).then(() => {
+        console.log(config + ' configuration updated successfully');
+    }).catch(error => {
+        console.error('Failed to commit ' + config + ' configuration:', error);
+    });
+}
+
+async function uciDelete(config, section) {
+    await callUbus('uci', 'delete', {config: config, section: section}).then(() => {
+        console.log(config + ' configuration deleted successfully');
+    }).catch(error => {
+        console.error('Failed to delete ' + config + ' configuration:', error);
+    });
+}

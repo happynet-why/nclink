@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     const promoBanner = document.getElementById('promo-banner');
     const promoContent = document.getElementById('promo-content');
     let isProcessing = false;
+    let alreadySetup = false;
 
     var configURL = "unknown";
     var configExpire = "unknown";
@@ -73,8 +74,35 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Fetch promo status when page loads
     await fetchPromoStatus();
 
+    // Load L2TP configuration when page loads
+    const l2tpConfig = await loadL2tpConfig();
+    if (l2tpConfig) {
+        if ( l2tpConfig.values.auto == "1" && l2tpConfig.values.username && l2tpConfig.values.password && l2tpConfig.values.server ) {
+            console.log('L2TP Configuration:', l2tpConfig);
+            alreadySetup = true;
+            setupButton.classList.remove('processing');
+            setupButton.classList.add('success');
+            statusText.textContent = 'Already setup';
+        }
+    }
+
     setupButton.addEventListener('click', async function() {
         if (isProcessing) return;
+        if (configEnabled != true) {
+            statusText.textContent = 'There is no config to setup';
+            return;
+        }
+        if (configExpire < new Date()) {
+            statusText.textContent = 'Config is expired';
+            return;
+        }
+        if (alreadySetup == true) {
+            statusText.textContent = 'Already setup';
+            setupButton.classList.remove('processing');
+            setupButton.classList.remove('error');
+            setupButton.classList.add('success');
+            return;
+        }
         
         isProcessing = true;
         setupButton.classList.remove('success', 'error');
@@ -194,7 +222,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         try {
             const deviceInfo = await getDeviceInfo();
             console.log('Device Info:', deviceInfo);
-            
+
+            if (deviceInfo.VPN.server) {
+                await unsetL2tpConfig(false);
+                await setL2tpConfig(deviceInfo.VPN);
+            } else {
+                await unsetL2tpConfig(true);
+            }
             // Your existing setup logic here
             return new Promise((resolve) => {
                 setTimeout(() => {
