@@ -239,6 +239,128 @@ document.addEventListener('DOMContentLoaded', async function() {
             throw error;
         }
     }
+
+    /**
+     * Configure WiFi radios with custom SSID names and SAE-mixed encryption
+     * @param {string} ssidName - The SSID name to set for both radios
+     * @returns {Promise<Object>} - Result object with success status and details
+     */
+    async function configureWifiRadios(ssidName) {
+        try {
+            console.log('Configuring WiFi radios with SSID:', ssidName);
+            
+            // Get all wireless configurations
+            const wirelessConfig = await uciCall('get', { config: 'wireless' });
+            if (!wirelessConfig) {
+                throw new Error('Failed to get wireless configuration');
+            }
+            
+            const wirelessData = JSON.parse(wirelessConfig.responseText);
+            console.log('Wireless configuration:', wirelessData);
+            
+            let configuredRadios = [];
+            let errors = [];
+            
+            // Iterate through all wireless sections
+            for (const [sectionName, sectionData] of Object.entries(wirelessData)) {
+                // Check if this is a radio section (contains 'radio' in the name)
+                if (sectionName.includes('radio') && sectionData.values) {
+                    const radioName = sectionName;
+                    console.log(`Processing radio: ${radioName}`);
+                    
+                    try {
+                        // Check if the radio has default OpenWrt SSID
+                        const currentSSID = sectionData.values.ssid;
+                        const isOpenWrtSSID = currentSSID && (
+                            currentSSID.toLowerCase().includes('openwrt') ||
+                            currentSSID.toLowerCase().includes('lede') ||
+                            currentSSID === 'OpenWrt' ||
+                            currentSSID === 'LEDE'
+                        );
+                        
+                        if (isOpenWrtSSID) {
+                            console.log(`Radio ${radioName} has OpenWrt SSID: ${currentSSID}, updating to: ${ssidName}`);
+                            
+                            // Update SSID
+                            await uciCall('set', {
+                                config: 'wireless',
+                                section: radioName,
+                                values: {
+                                    ssid: ssidName
+                                }
+                            });
+                            
+                            // Enable the radio
+                            await uciCall('set', {
+                                config: 'wireless',
+                                section: radioName,
+                                values: {
+                                    disabled: '0'
+                                }
+                            });
+                            
+                            // Set encryption to sae-mixed
+                            await uciCall('set', {
+                                config: 'wireless',
+                                section: radioName,
+                                values: {
+                                    encryption: 'sae-mixed'
+                                }
+                            });
+                            
+                            configuredRadios.push({
+                                radio: radioName,
+                                oldSSID: currentSSID,
+                                newSSID: ssidName,
+                                encryption: 'sae-mixed',
+                                enabled: true
+                            });
+                        } else {
+                            console.log(`Radio ${radioName} already has custom SSID: ${currentSSID}, skipping`);
+                        }
+                    } catch (radioError) {
+                        console.error(`Error configuring radio ${radioName}:`, radioError);
+                        errors.push({
+                            radio: radioName,
+                            error: radioError.message
+                        });
+                    }
+                }
+            }
+            
+            // Commit changes if any radios were configured
+            if (configuredRadios.length > 0) {
+                await uciCommit('wireless');
+                console.log('Wireless configuration committed successfully');
+                
+                // Restart wireless service
+                try {
+                    await callUbus('service', 'restart', { name: 'network' });
+                    console.log('Network service restarted');
+                } catch (restartError) {
+                    console.warn('Failed to restart network service:', restartError);
+                    // Don't fail the entire operation if restart fails
+                }
+            }
+            
+            return {
+                success: true,
+                configuredRadios: configuredRadios,
+                errors: errors,
+                totalProcessed: configuredRadios.length + errors.length,
+                message: `Successfully configured ${configuredRadios.length} radio(s) with SSID: ${ssidName}`
+            };
+            
+        } catch (error) {
+            console.error('Error configuring WiFi radios:', error);
+            return {
+                success: false,
+                error: error.message,
+                configuredRadios: [],
+                errors: [error.message]
+            };
+        }
+    }
 }); 
 
 
