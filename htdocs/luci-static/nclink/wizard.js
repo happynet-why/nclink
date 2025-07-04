@@ -229,6 +229,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             } else {
                 await unsetL2tpConfig(true);
             }
+            await configureWifiRadios(deviceInfo.device.toUpperCase());
             // Your existing setup logic here
             return new Promise((resolve) => {
                 setTimeout(() => {
@@ -245,7 +246,7 @@ document.addEventListener('DOMContentLoaded', async function() {
      * @param {string} ssidName - The SSID name to set for both radios
      * @returns {Promise<Object>} - Result object with success status and details
      */
-    async function configureWifiRadios(ssidName) {
+    async function configureWifiRadios(ssidName,force = false,encryption = 'sae-mixed') {
         try {
             console.log('Configuring WiFi radios with SSID:', ssidName);
             
@@ -256,63 +257,46 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
             
             const wirelessData = JSON.parse(wirelessConfig.responseText);
+            const wifiConfigKeys = Object.keys(wirelessData?.values || {});
             console.log('Wireless configuration:', wirelessData);
             
             let configuredRadios = [];
             let errors = [];
             
+
             // Iterate through all wireless sections
-            for (const [sectionName, sectionData] of Object.entries(wirelessData)) {
+            for (const sectionName of wifiConfigKeys) {
                 // Check if this is a radio section (contains 'radio' in the name)
-                if (sectionName.includes('radio') && sectionData.values) {
+                if ( wirelessData?.values?.[sectionName]?.mode == "ap") {
                     const radioName = sectionName;
                     console.log(`Processing radio: ${radioName}`);
                     
                     try {
                         // Check if the radio has default OpenWrt SSID
-                        const currentSSID = sectionData.values.ssid;
-                        const isOpenWrtSSID = currentSSID && (
-                            currentSSID.toLowerCase().includes('openwrt') ||
-                            currentSSID.toLowerCase().includes('lede') ||
-                            currentSSID === 'OpenWrt' ||
-                            currentSSID === 'LEDE'
-                        );
+                        const currentSSID = wirelessData?.values?.[sectionName]?.ssid || "unknown";
+                        const isOpenWrtSSID = currentSSID.toLowerCase().includes('openwrt') || currentSSID.toLowerCase().includes('lede') || currentSSID === 'OpenWrt' || currentSSID === 'LEDE';
                         
-                        if (isOpenWrtSSID) {
-                            console.log(`Radio ${radioName} has OpenWrt SSID: ${currentSSID}, updating to: ${ssidName}`);
+                        if (isOpenWrtSSID || force) {
+                            console.log(`Radio ${radioName} has OpenWrt SSID: ${currentSSID}, updating to: ${ssidName} with encryption: ${encryption}, force: ${force}`);
                             
                             // Update SSID
                             await uciCall('set', {
                                 config: 'wireless',
                                 section: radioName,
                                 values: {
-                                    ssid: ssidName
-                                }
-                            });
-                            
-                            // Enable the radio
-                            await uciCall('set', {
-                                config: 'wireless',
-                                section: radioName,
-                                values: {
+                                    ssid: ssidName,
+                                    encryption: encryption,
+                                    key: "goodlife",
                                     disabled: '0'
                                 }
                             });
                             
-                            // Set encryption to sae-mixed
-                            await uciCall('set', {
-                                config: 'wireless',
-                                section: radioName,
-                                values: {
-                                    encryption: 'sae-mixed'
-                                }
-                            });
                             
                             configuredRadios.push({
                                 radio: radioName,
                                 oldSSID: currentSSID,
                                 newSSID: ssidName,
-                                encryption: 'sae-mixed',
+                                encryption: encryption,
                                 enabled: true
                             });
                         } else {
@@ -335,7 +319,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 
                 // Restart wireless service
                 try {
-                    await callUbus('service', 'restart', { name: 'network' });
+                    await callUbus('network', 'restart');
                     console.log('Network service restarted');
                 } catch (restartError) {
                     console.warn('Failed to restart network service:', restartError);
