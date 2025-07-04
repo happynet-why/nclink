@@ -51,7 +51,7 @@ for T in "${TARGETS[@]}"; do
   cp -r "$PACKAGE_DIR" "$SDK_DIR/package/"
 
   # Build inside Docker
-docker run --rm -v "$(realpath "$SDK_DIR")":/build -w /build openwrt/rootfs /bin/sh -c "
+docker run --rm -v "$(realpath "$SDK_DIR")":/build -w /build openwrt/sdk:23.05.3 /bin/sh -c "
     set -e
     ./scripts/feeds update -a > /dev/null
     ./scripts/feeds install -a > /dev/null
@@ -71,7 +71,7 @@ cd "$OUTPUT_DIR"
 if command -v opkg-scanpackages &> /dev/null; then
     opkg-scanpackages . > Packages
 else
-    docker run --rm -v "$(pwd)":/data openwrt/rootfs /bin/sh -c "opkg-scanpackages /data > /data/Packages"
+    docker run --rm -v "$(pwd)":/data openwrt/sdk:23.05.3 /bin/sh -c "opkg-scanpackages /data > /data/Packages"
 fi
 gzip -f Packages
 
