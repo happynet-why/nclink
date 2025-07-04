@@ -93,7 +93,7 @@ async function unsetL2tpConfig(doCommit = true) {
 async function loadL2tpConfig() {
     try {
         const response = await callUbus("uci", "get", {config: "network", section: "l2tp"});
-        const l2tpConfig = JSON.parse(response.responseText);
+        const l2tpConfig = JSON.parse(response.responseText) ;
 
         if (!l2tpConfig) {
             console.error('L2TP configuration not found');

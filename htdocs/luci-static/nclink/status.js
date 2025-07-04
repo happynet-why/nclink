@@ -1,24 +1,36 @@
 // Status update functions
 function updateWanStatus() {
+
     callUbus('network.interface', 'dump').then(response => {
+        console.log("response", response);
         const interfaces = response.json().interface;
         const wanInterface = interfaces.find(iface => iface.interface === 'wan');
-        
-        if (wanInterface) {
-            const status = wanInterface.up ? 'connected' : 'disconnected';
-            const ipaddr = wanInterface['ipv4-address']?.[0]?.['address'] || '-';
-            const gateway = wanInterface.route?.[0]?.['nexthop'] || '-';
-            const dns = wanInterface['dns-server']?.[0] || '-';
-            const uptime = formatUptime(wanInterface.uptime || 0);
+        const wwanInterface = interfaces.find(iface => iface.interface === 'wwan');
+        console.log("wanInterface", wanInterface);
 
-            document.getElementById('wan-proto').textContent = wanInterface.proto || '-';
-            document.getElementById('wan-status').textContent = status;
-            document.getElementById('wan-status').className = `status-value ${status}`;
-            document.getElementById('wan-ip').textContent = ipaddr;
-            document.getElementById('wan-gateway').textContent = gateway;
-            document.getElementById('wan-dns').textContent = dns;
-            document.getElementById('wan-uptime').textContent = uptime;
+    
+        var status = wanInterface?.up ? 'connected' : 'disconnected';
+        var ipaddr = wanInterface?.['ipv4-address']?.[0]?.['address'] || '-';
+        var gateway = wanInterface?.route?.[0]?.['nexthop'] || '-';
+        var dns = wanInterface?.['dns-server']?.[0] || '-';
+        var uptime = formatUptime(wanInterface?.uptime || 0);
+
+        if(wwanInterface?.up && wanInterface?.up == false) {
+            status = wwanInterface.up ? 'connected' : 'disconnected';
+            ipaddr = wwanInterface['ipv4-address']?.[0]?.['address'] || '-';
+            gateway = wwanInterface.route?.[0]?.['nexthop'] || '-';
+            dns = wwanInterface['dns-server']?.[0] || '-';
+            uptime = formatUptime(wwanInterface.uptime || 0);
         }
+        
+        document.getElementById('wan-proto').textContent = wanInterface.proto || '-';
+        document.getElementById('wan-status').textContent = status;
+        document.getElementById('wan-status').className = `status-value ${status}`;
+        document.getElementById('wan-ip').textContent = ipaddr;
+        document.getElementById('wan-gateway').textContent = gateway;
+        document.getElementById('wan-dns').textContent = dns;
+        document.getElementById('wan-uptime').textContent = uptime;
+
     }).catch(error => {
         console.error('Failed to get WAN status:', error);
     });
@@ -126,13 +138,7 @@ function updateAllStatus() {
     updateVpnStatus();
 }
 
-// Initial load
-document.addEventListener('DOMContentLoaded', function() {
-    updateAllStatus();
-    
-    // Set up refresh button
-    document.getElementById('refresh-status').addEventListener('click', updateAllStatus);
-    
-    // Auto-refresh every 30 seconds
-    setInterval(updateAllStatus, 30000);
-}); 
+// Auto-refresh every 30 seconds
+//setInterval(updateAllStatus, 5000);
+updateAllStatus();
+document.getElementById('refresh-status').addEventListener('click', updateAllStatus);

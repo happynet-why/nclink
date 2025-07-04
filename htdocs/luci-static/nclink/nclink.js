@@ -33,34 +33,6 @@ function loadNetworkInterfaces() {
 }
 
 
-function callUbus(object, method, params = {}) {
-    return L.Request.post(L.url('admin/nclink/ubus_proxy'), {
-        object: object,
-        method: method,
-        params: params
-    }).then(function(response) {
-        console.log("UBUS Response:", response);
-        if (!response.ok) {
-            throw new Error(response.statusText || 'UBUS call failed');
-        }
-        return response;
-    }).catch(function(error) {
-        console.error("UBUS call failed:", error);
-        throw error;
-    });
-}
-
-async function uciCall( method , params ) {
-    var result;
-    try {
-        result = await callUbus('uci', method, params);
-        return result;
-    } catch (error) {
-        console.error('Failed to call uci:', error);
-        return false;
-    }
-}
-
 function getNetworkInterfaces() {
     return callUbus('network.interface', 'dump')
         .then(response => {
@@ -76,100 +48,6 @@ function getNetworkInterfaces() {
             console.error("Failed to get network interfaces:", error);
             return [];
         });
-}
-
-function loadWanConfig() {
-    getNetworkInterfaces().then(response => {
-        const interfaces = response.json().interface;
-        console.log("interface:  ", interfaces)
-         var wanInterface = ""
-
-        interfaces.forEach(networkInterface => {
-           if (networkInterface.interface == "wan")
-            {
-                wanInterface = networkInterface
-            } 
-        });
-
-        if (!wanInterface) {
-
-            interfaces.forEach(networkInterface => {
-                if (networkInterface.interface == "wwan")
-                 {
-                     wanInterface = networkInterface
-                 } 
-             });
-
-        }
-
-        if (!wanInterface) {
-
-            console.error('WAN interface not found');
-            return;
-        }
-
-        const proto = wanInterface.proto;
-       
-        const ipaddr = wanInterface?.["ipv4-address"][0]?.["address"]
-        const netmask = "/" + wanInterface?.["ipv4-address"][0]?.["mask"]
-        const gateway = wanInterface?.["route"][0]?.["nexthop"]
-        const dns = wanInterface?.["dns-server"][0]
-        console.log("ipaddr: ", ipaddr)
-        console.log("netmask: ", netmask)
-        console.log("gateway: ", gateway)
-        console.log("dns: ", dns)
-
-        document.getElementById('dhcp-toggle').checked = (proto === 'dhcp');
-        document.getElementById('static-ip').value = ipaddr;
-        document.getElementById('subnet-mask').value = netmask;
-        document.getElementById('gateway').value = gateway;
-        document.getElementById('dns').value = dns;
-
-        const isDhcpEnabled = (proto === 'dhcp');
-        document.getElementById('static-ip').disabled = isDhcpEnabled;
-        document.getElementById('subnet-mask').disabled = isDhcpEnabled;
-        document.getElementById('gateway').disabled = isDhcpEnabled;
-        document.getElementById('dns').disabled = isDhcpEnabled;
-    }).catch(error => {
-        console.error('Failed to retrieve network interfaces:', error);
-    });
-}
-
-function setWanConfig() {
-    const isDhcpEnabled = document.getElementById('dhcp-toggle').checked;
-    const proto = isDhcpEnabled ? 'dhcp' : 'static';
-
-    const params = {
-        config: 'network',
-        section: 'wan',
-        values:{
-            proto: proto
-        }
-    };
-
-    if (!isDhcpEnabled) {
-        params.values.ipaddr = document.getElementById('static-ip').value;
-        params.values.netmask = document.getElementById('subnet-mask').value;
-        params.values.gateway = document.getElementById('gateway').value;
-        params.values.dns = document.getElementById('dns').value;
-    }
-    else {
-        callUbus('uci', 'delete', {config: 'network', section: 'wan', options: ['ipaddr', 'netmask', 'gateway', 'dns']}).then(() => {
-            console.log('WAN interface configuration updated successfully');
-        }).catch(error => {
-            console.error('Failed to update WAN interface configuration:', error);
-        });
-    }
-
-    callUbus('uci', 'set', params).then(() => {
-        callUbus('uci', 'commit', {config: 'network'}).then(() => {
-            console.log('WAN interface configuration updated successfully');
-        }).catch(error => {
-            console.error('Failed to commit WAN interface configuration:', error);
-        });
-    }).catch(error => {
-        console.error('Failed to update WAN interface configuration:', error);
-    });
 }
 
 const wirelessEncryption = {
@@ -212,28 +90,10 @@ function setWirelessConfig() {
     const ssid = document.getElementById('ssid').value;
     const encryption = document.getElementById('encryption').value;
     const password = document.getElementById('password').value;
-    const separateBands = document.getElementById('separate-bands').checked;
     
-    const params = {
-        config: 'wireless',
-        section: 'default_radio0',
-        values: {
-            ssid: ssid,
-            encryption: encryption,
-            key: password,
-            disabled: isWirelessEnabled ? 0 : 1
-        }
-    };
-
-    callUbus('uci', 'set', params).then(() => {
-        callUbus('uci', 'commit', {config: 'wireless'}).then(() => {
-            console.log('Wireless interface configuration updated successfully');
-        }).catch(error => {
-            console.error('Failed to commit wireless interface configuration:', error);
-        });
-    }).catch(error => {
-        console.error('Failed to update wireless interface configuration:', error);
-    });
+    configureWifiRadios(ssid,true,encryption,password,isWirelessEnabled).then(result => {
+        console.log('Wifi Result:', result);
+    });    
 }
 
 
@@ -245,13 +105,13 @@ const l2tpConfig = document.getElementById('l2tp-config');
 const wgInputs = wireguardConfig.querySelectorAll('input');
 const l2tpInputs = l2tpConfig.querySelectorAll('input');
 
-function toggleVpnConfig() {
-    if (vpnWireguard.checked) {
+function toggleVpnConfig(vpnType) {
+    if (vpnType == 'wireguard') {
         wireguardConfig.style.display = 'block';    
         l2tpConfig.style.display = 'none';
         wgInputs.forEach(input => input.disabled = false);
         l2tpInputs.forEach(input => input.disabled = true);
-    } else if (vpnL2tp.checked) {
+    } else if (vpnType == 'l2tp') {
         wireguardConfig.style.display = 'none';
         l2tpConfig.style.display = 'block';
         wgInputs.forEach(input => input.disabled = true);
@@ -259,64 +119,67 @@ function toggleVpnConfig() {
     }
 }
 
-vpnWireguard.addEventListener('change', toggleVpnConfig);
-vpnL2tp.addEventListener('change', toggleVpnConfig);
+vpnWireguard.addEventListener('change', () => toggleVpnConfig('wireguard'));
+vpnL2tp.addEventListener('change', () => toggleVpnConfig('l2tp'));
 
 // Initial toggle to set the correct state on page load
-toggleVpnConfig();
+toggleVpnConfig('l2tp');
 
-// Function to load VPN configuration
-function loadVpnConfig() {
-    callUbus("uci", "get", {config: "network", section: "wg0"}).then(response => {
-        const vpnConfig = JSON.parse(response.responseText);
-
-        if (!vpnConfig) {
-            console.error('VPN configuration not found');
+async function loadWireguardConfig() {
+    try {
+        const response = await callUbus("uci", "get", {config: "network", section: "wg0"});
+        const wireguardConfig = JSON.parse(response.responseText);
+        if (!wireguardConfig) {
+            console.error('WireGuard configuration not found');
             return;
         }
+        return wireguardConfig;
+    } catch (error) {
+        console.error('Failed to retrieve WireGuard configuration:', error);
+        return {};
+    }
+}
 
-        console.log("vpnConfig: ", vpnConfig);
-       
+
+// Function to load VPN configuration
+async function loadVpnConfig() {
+
+    const l2tpConfig = await loadL2tpConfig();
+    const wireguardConfig = await loadWireguardConfig();
+
+    const vpnType = l2tpConfig?.values?.proto || wireguardConfig?.values?.proto || 'wireguard';
+    console.log("vpnType", vpnType);
+    document.getElementById('vpn-wireguard').checked = (vpnType === 'wireguard');
+    document.getElementById('vpn-l2tp').checked = (vpnType === 'l2tp');
+    toggleVpnConfig(vpnType);
+
+    if (vpnType == 'l2tp') {
+        document.getElementById('l2tp-host').value = l2tpConfig?.values?.server || '';
+        document.getElementById('l2tp-username').value = l2tpConfig?.values?.username || '';
+        document.getElementById('l2tp-password').value = l2tpConfig?.values?.password || '';
+        return;
+    }
+    
+    if (vpnType == 'wireguard') {
+        var wireguard= {};
+        wireguard = Object.assign({}, wireguardConfig?.values );
+        console.log("wireguard", wireguard);
+        const response = await callUbus("uci", "get", {config: "network", section: "peer1"});
+        const peerConfig = JSON.parse(response.responseText);
+        wireguard = Object.assign(wireguard, peerConfig?.values );
 
 
-        const vpnType = vpnConfig?.values?.proto || 'wireguard';
-        var wireguardConfig = {};
-        if (vpnConfig?.values?.proto == 'wireguard') {
-            wireguardConfig = Object.assign({}, vpnConfig?.values );
-            callUbus("uci", "get", {config: "network", section: "peer1"}).then(response => {
-                const peerConfig = JSON.parse(response.responseText);
-                if (!peerConfig) {
-                    console.error('Peer configuration not found');
-                    return;
-                }
-                wireguardConfig = Object.assign(wireguardConfig, peerConfig.values );
-                document.getElementById('vpn-wireguard').checked = (vpnType === 'wireguard');
-                document.getElementById('vpn-l2tp').checked = (vpnType === 'l2tp');
+        // WireGuard settings
+        document.getElementById('wg-private-key').value = wireguard?.private_key || '';
+        document.getElementById('wg-public-key').value = wireguard?.public_key || '';
+        document.getElementById('wg-endpoint-host').value = wireguard?.endpoint_host || '';
+        document.getElementById('wg-endpoint-port').value = wireguard?.endpoint_port || '';
+        document.getElementById('wg-address').value = wireguard?.addresses || '';
+        document.getElementById('wg-dns').value = wireguard?.dns || '';
+        document.getElementById('wg-preshared-key').value = wireguard?.preshared_key || '';
+    }
 
-                // WireGuard settings
-                document.getElementById('wg-private-key').value = wireguardConfig.private_key || '';
-                document.getElementById('wg-public-key').value = wireguardConfig.public_key || '';
-                document.getElementById('wg-endpoint-host').value = wireguardConfig.endpoint_host || '';
-                document.getElementById('wg-endpoint-port').value = wireguardConfig.endpoint_port || '';
-                document.getElementById('wg-address').value = wireguardConfig.addresses || '';
-                document.getElementById('wg-dns').value = wireguardConfig.dns || '';
-                document.getElementById('wg-preshared-key').value = wireguardConfig.preshared_key || '';
-            })
-        }
 
-        const l2tpConfig = vpnConfig?.values || {} ;
-        
-
-        // L2TP settings
-        document.getElementById('l2tp-host').value = l2tpConfig.host || '';
-        document.getElementById('l2tp-port').value = l2tpConfig.port || '';
-        document.getElementById('l2tp-username').value = l2tpConfig.username || '';
-        document.getElementById('l2tp-password').value = l2tpConfig.password || '';
-        toggleVpnConfig();
-
-    }).catch(error => {
-        console.error('Failed to retrieve VPN configuration:', error);
-    });
 }
 
 // Function to set VPN configuration
@@ -478,22 +341,6 @@ async function unsetL2tpConfig() {
     await uciCommit('network');
 }
 
-async function uciCommit(config) {
-    await callUbus('uci', 'commit', {config: config}).then(() => {
-        console.log(config + ' configuration updated successfully');
-    }).catch(error => {
-        console.error('Failed to commit ' + config + ' configuration:', error);
-    });
-}
-
-async function uciDelete(config, section) {
-    await callUbus('uci', 'delete', {config: config, section: section}).then(() => {
-        console.log(config + ' configuration deleted successfully');
-    }).catch(error => {
-        console.error('Failed to delete ' + config + ' configuration:', error);
-    });
-}
-
 // Bind the functions to the HTML elements
 const reloadButton = document.getElementById('reload-interfaces');
 const saveButton = document.getElementById('save-interfaces');
@@ -502,8 +349,6 @@ const saveWirelessButton = document.getElementById('save-wireless');
 const reloadVpnButton = document.getElementById('reload-vpn');
 const saveVpnButton = document.getElementById('save-vpn');
 
-reloadButton.addEventListener('click', loadWanConfig);
-saveButton.addEventListener('click', setWanConfig);
 reloadWirelessButton.addEventListener('click', loadWirelessConfig);
 saveWirelessButton.addEventListener('click', setWirelessConfig);
 reloadVpnButton.addEventListener('click', loadVpnConfig);
@@ -620,12 +465,7 @@ async function loadL2tpConfig() {
             console.error('L2TP configuration not found');
             return;
         }
-
-        // Update UI elements with L2TP configuration
-        document.getElementById('l2tp-host').value = l2tpConfig.values.server || '';
-        document.getElementById('l2tp-username').value = l2tpConfig.values.username || '';
-        document.getElementById('l2tp-password').value = l2tpConfig.values.password || '';
-
+        return l2tpConfig;
     } catch (error) {
         console.error('Failed to retrieve L2TP configuration:', error);
     }
