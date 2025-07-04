@@ -19,6 +19,12 @@ if ! command -v docker &> /dev/null; then
     exit 1
 fi
 
+if ! command -v realpath &>/dev/null; then
+  echo "❌ 'realpath' is required but not installed. Please install it (e.g. sudo apt install coreutils)."
+  exit 1
+fi
+
+
 mkdir -p "$OUTPUT_DIR"
 mkdir -p sdk-workdir
 
@@ -45,7 +51,7 @@ for T in "${TARGETS[@]}"; do
   cp -r "$PACKAGE_DIR" "$SDK_DIR/package/"
 
   # Build inside Docker
-  docker run --rm -v "$SDK_DIR":/build -w /build openwrt/rootfs /bin/bash -c "
+docker run --rm -v "$(realpath "$SDK_DIR")":/build -w /build openwrt/rootfs /bin/bash -c "
     set -e
     ./scripts/feeds update -a > /dev/null
     ./scripts/feeds install -a > /dev/null
