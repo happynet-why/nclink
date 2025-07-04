@@ -79,24 +79,6 @@
                                 </div>
                                 <div class="ncflex-col-6">
                                     <div class="cbi-value">
-                                        <label class="cbi-value-title">SSID</label>
-                                        <div class="cbi-value-field">
-                                            <span id="wifi-ssid" class="status-value">-</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="ncflex-flex-row">
-                                <div class="ncflex-col-6">
-                                    <div class="cbi-value">
-                                        <label class="cbi-value-title">Encryption</label>
-                                        <div class="cbi-value-field">
-                                            <span id="wifi-encryption" class="status-value">-</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="ncflex-col-6">
-                                    <div class="cbi-value">
                                         <label class="cbi-value-title">Channel</label>
                                         <div class="cbi-value-field">
                                             <span id="wifi-channel" class="status-value">-</span>
@@ -107,17 +89,17 @@
                             <div class="ncflex-flex-row">
                                 <div class="ncflex-col-6">
                                     <div class="cbi-value">
-                                        <label class="cbi-value-title">Signal Strength</label>
+                                        <label class="cbi-value-title">Band</label>
                                         <div class="cbi-value-field">
-                                            <span id="wifi-signal" class="status-value">-</span>
+                                            <span id="wifi-band" class="status-value">-</span>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="ncflex-col-6">
                                     <div class="cbi-value">
-                                        <label class="cbi-value-title">Connected Clients</label>
+                                        <label class="cbi-value-title">Interfaces</label>
                                         <div class="cbi-value-field">
-                                            <span id="wifi-clients" class="status-value">-</span>
+                                            <span id="wifi-interfaces" class="status-value">-</span>
                                         </div>
                                     </div>
                                 </div>
@@ -163,24 +145,6 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="ncflex-flex-row">
-                                <div class="ncflex-col-6">
-                                    <div class="cbi-value">
-                                        <label class="cbi-value-title">Kill Switch</label>
-                                        <div class="cbi-value-field">
-                                            <span id="vpn-killswitch" class="status-value">-</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="ncflex-col-6">
-                                    <div class="cbi-value">
-                                        <label class="cbi-value-title">Data Transferred</label>
-                                        <div class="cbi-value-field">
-                                            <span id="vpn-data" class="status-value">-</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
 
                         <div class="cbi-page-actions">
@@ -190,7 +154,7 @@
                 </div>
             </div>
         </div>
-
+        <script src="<%=resource%>/nclink/utils.js"></script>
         <script>
             document.addEventListener('DOMContentLoaded', function () {
                 const script = document.createElement('script');

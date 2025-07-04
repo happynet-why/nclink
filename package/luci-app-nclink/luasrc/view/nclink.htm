@@ -10,7 +10,7 @@
 
                         <div class="cbi-separator"></div>
 
-                        <div class="cbi-section">
+                        <div class="cbi-section hidden">
                             <!-- WAN Interface -->
                             <h3>Configure the WAN Interface</h3>
                             <div class="ncflex-flex-row">
@@ -81,15 +81,6 @@
                                         <label class="cbi-value-title">Enable Wireless</label>
                                         <div class="cbi-value-field">
                                         <input type="checkbox" id="wireless-toggle" title="Enable Wireless">
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="ncflex-col-6">
-                                    <div class="cbi-checkbox">
-                                        <label class="cbi-value-title">Separate 2G & 5G</label>
-                                        <div class="cbi-value-field">
-                                    <input type="checkbox" id="separate-bands" title="Separate 2G & 5G">
-                                        <!-- When checked, append -2G or -5G to the SSID -->
                                         </div>
                                     </div>
                                 </div>
@@ -254,15 +245,13 @@
                                     value="Save VPN Configuration">
                                 <input type="button" class="cbi-button cbi-button-reset" id="reload-vpn"
                                     value="Reload VPN">
-                                <input type="button" class="cbi-button cbi-button-reset" id="delete-vpn"
-                                    value="Delete VPN Config">
                             </div>
                         </div>
 
                         <div class="cbi-separator"></div>
 
                         <!-- Advanced Settings Section -->
-                        <div class="cbi-section">
+                        <div class="cbi-section hidden">
                             <h3>Advanced Settings</h3>
 
                             <div class="cbi-checkbox">
@@ -310,6 +299,7 @@
             </div>
         </div>
         </div>
+        <script src="<%=resource%>/nclink/utils.js"></script>
         <script>
             document.addEventListener('DOMContentLoaded', function () {
                 // Create a new <script> element
@@ -319,7 +309,6 @@
                 script.onload = function () {
                     console.log('nclink.js loaded successfully.');
                     // Call all reload functions after script loads
-                    loadWanConfig();
                     loadWirelessConfig();
                     loadVpnConfig();
                 };
@@ -367,6 +356,7 @@
                 });
             });
         </script>
+
 
         <!-- <script type="text/javascript" src="<%=resource%>/nclink/nclink.js"></script> -->
     </body>
