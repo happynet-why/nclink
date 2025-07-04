@@ -14,11 +14,6 @@ TARGETS=(
   "x86/64"
 )
 
-if ! command -v docker &> /dev/null; then
-    echo "❌ Docker is not installed. Please install Docker."
-    exit 1
-fi
-
 if ! command -v realpath &>/dev/null; then
   echo "❌ 'realpath' is required but not installed. Please install it (e.g. sudo apt install coreutils)."
   exit 1
@@ -50,29 +45,18 @@ for T in "${TARGETS[@]}"; do
   # Copy your package into the SDK
   cp -r "$PACKAGE_DIR" "$SDK_DIR/package/"
 
-  # Build inside Docker
-docker run --rm -v "$(realpath "$SDK_DIR")":/build -w /build openwrt/sdk:23.05.3 /bin/sh -c "
-    set -e
-    ./scripts/feeds update -a > /dev/null
-    ./scripts/feeds install -a > /dev/null
+  # Build using the native SDK
+  cd "$SDK_DIR"
+  ./scripts/feeds update -a > /dev/null
+  ./scripts/feeds install -a > /dev/null
 
-    echo 'CONFIG_PACKAGE_$PACKAGE_NAME=y' >> .config
-    make defconfig
-    make package/$PACKAGE_NAME/compile -j\$(nproc) V=s
-  "
+  echo "CONFIG_PACKAGE_$PACKAGE_NAME=y" >> .config
+  make defconfig
+  make package/$PACKAGE_NAME/compile -j$(nproc) V=s
+  cd - > /dev/null
 
   # Copy resulting IPKs to output
   find "$SDK_DIR/bin/packages/" -name "${PACKAGE_NAME}_*.ipk" -exec cp {} "$OUTPUT_DIR" \;
 done
 
-# Build Packages.gz
-echo "📦 Generating Packages.gz..."
-cd "$OUTPUT_DIR"
-if command -v opkg-scanpackages &> /dev/null; then
-    opkg-scanpackages . > Packages
-else
-    docker run --rm -v "$(pwd)":/data openwrt/sdk:23.05.3 /bin/sh -c "opkg-scanpackages /data > /data/Packages"
-fi
-gzip -f Packages
-
-echo "✅ All builds complete. IPKs and repo index are in $OUTPUT_DIR"
+echo "✅ All builds complete. IPKs are in $OUTPUT_DIR"
