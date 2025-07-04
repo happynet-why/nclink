@@ -2,13 +2,13 @@
 function updateWanStatus() {
 
     callUbus('network.interface', 'dump').then(response => {
-        console.log("response", response);
-        const interfaces = response.json().interface;
+        const responseData = JSON.parse(response.responseText);
+        console.log("responseData", responseData);
+        const interfaces = responseData?.interface;
         const wanInterface = interfaces.find(iface => iface.interface === 'wan');
         const wwanInterface = interfaces.find(iface => iface.interface === 'wwan');
-        console.log("wanInterface", wanInterface);
+        
 
-    
         var status = wanInterface?.up ? 'connected' : 'disconnected';
         var ipaddr = wanInterface?.['ipv4-address']?.[0]?.['address'] || '-';
         var gateway = wanInterface?.route?.[0]?.['nexthop'] || '-';
@@ -37,26 +37,35 @@ function updateWanStatus() {
 }
 
 function updateWifiStatus() {
-    callUbus('wireless', 'status').then(response => {
-        const wirelessStatus = response.json();
-        const radio0 = wirelessStatus.radio0;
-        
-        if (radio0) {
-            const status = radio0.up ? 'connected' : 'disconnected';
-            const ssid = radio0.ssid || '-';
-            const encryption = radio0.encryption || '-';
-            const channel = radio0.channel || '-';
-            const signal = radio0.signal ? `${radio0.signal} dBm` : '-';
-            const clients = radio0.clients?.length || 0;
+    callUbus('network.wireless', 'status').then(response => {
+        const radios = JSON.parse(response.responseText);
+        console.log("radios", radios);
+        const availableRadios = Object.keys(radios);
+        var wifiStatus = {
+            "status": [],
+            "channel": [],
+            "band": [],
+            "interfaces": []
+        };
 
-            document.getElementById('wifi-status').textContent = status;
-            document.getElementById('wifi-status').className = `status-value ${status}`;
-            document.getElementById('wifi-ssid').textContent = ssid;
-            document.getElementById('wifi-encryption').textContent = encryption;
-            document.getElementById('wifi-channel').textContent = channel;
-            document.getElementById('wifi-signal').textContent = signal;
-            document.getElementById('wifi-clients').textContent = clients;
+        for (const radio of availableRadios) {
+            wifiStatus["status"].push(radios[radio].up ? 'up' : 'down');
+            wifiStatus["channel"].push(radios[radio].config.channel || '-');
+            wifiStatus["band"].push(radios[radio].config.band || '-'); 
+            wifiStatus["interfaces"].push(radios[radio].interfaces?.length || '0');
         }
+     
+
+        document.getElementById('wifi-status').textContent = wifiStatus["status"].join(" / ");
+        if(wifiStatus["status"].includes('up')) {
+            document.getElementById('wifi-status').className = `status-value connected`;
+        } else {
+            document.getElementById('wifi-status').className = `status-value disconnected`;
+        }
+        document.getElementById('wifi-channel').textContent = wifiStatus["channel"].join(" / ");
+        document.getElementById('wifi-band').textContent = wifiStatus["band"].join(" / ");
+        document.getElementById('wifi-interfaces').textContent = wifiStatus["interfaces"].join(" / ");
+
     }).catch(error => {
         console.error('Failed to get WiFi status:', error);
     });
