@@ -2,7 +2,7 @@
 set -e
 
 PACKAGE_NAME="luci-app-nclink"
-PACKAGE_SRC_DIR="./"
+PACKAGE_SRC_DIR="./package/$PACKAGE_NAME"
 OUTPUT_DIR="./packages"
 OPENWRT_VERSION="23.05.3"
 
@@ -20,7 +20,7 @@ if ! command -v docker &> /dev/null; then
 fi
 
 if [ ! -d "$PACKAGE_SRC_DIR" ]; then
-    echo "❌ Package source directory not found at: $PACKAGE_SRC_DIR"
+    echo "❌ Package directory not found at: $PACKAGE_SRC_DIR"
     exit 1
 fi
 
@@ -35,14 +35,18 @@ for TAG in "${TARGET_TAGS[@]}"; do
 
   docker run --rm \
     -v "$PACKAGE_SRC_DIR":/home/build/openwrt/package/$PACKAGE_NAME:ro \
-    -v "$OUTPUT_DIR":/home/build/openwrt/bin \
+    -v "$OUTPUT_DIR":/home/build/openwrt/bin/packages \
     "$IMAGE" \
-    /bin/sh -c " \
-      cd /home/build/openwrt; \
-      ./scripts/feeds update -a > /dev/null; \
-      ./scripts/feeds install -a > /dev/null; \
-      make package/$PACKAGE_NAME/compile -j\$(nproc) || exit 1; \
-      echo '✅ Build complete for $TAG'; \
+    /bin/bash -c "
+      cd /home/build/openwrt;
+      ./scripts/feeds update -a > /dev/null;
+      ./scripts/feeds install -a > /dev/null;
+
+      echo 'CONFIG_PACKAGE_$PACKAGE_NAME=y' >> .config;
+      make defconfig;
+
+      make package/$PACKAGE_NAME/compile -j\$(nproc) V=s || exit 1;
+      echo '✅ Build complete for $TAG';
     "
 done
 
@@ -54,7 +58,7 @@ if command -v opkg-scanpackages &> /dev/null; then
     opkg-scanpackages . > Packages
 else
     echo "Info: 'opkg-scanpackages' not found locally. Using Docker to generate index..."
-    docker run --rm -v "$OUTPUT_DIR":/data openwrt/sdk /bin/sh -c "opkg-scanpackages /data > /data/Packages"
+    docker run --rm -v "$OUTPUT_DIR":/data openwrt/rootfs /bin/sh -c "opkg-scanpackages /data > /data/Packages"
 fi
 gzip -f Packages
 
