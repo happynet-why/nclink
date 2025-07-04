@@ -27,6 +27,9 @@ for T in "${TARGETS[@]}"; do
   TARGET=$(echo "$T" | cut -d'/' -f1)
   SUBTARGET=$(echo "$T" | cut -d'/' -f2)
   SDK_NAME="openwrt-sdk-${OPENWRT_VERSION}-${TARGET}-${SUBTARGET}_gcc-12.3.0_musl.Linux-x86_64"
+  if [ "$TARGET" == "ipq40xx" ]; then
+    SDK_NAME="openwrt-sdk-${OPENWRT_VERSION}-${TARGET}-${SUBTARGET}_gcc-12.3.0_musl_eabi.Linux-x86_64"
+  fi
   SDK_TARBALL="${SDK_NAME}.tar.xz"
   SDK_URL="https://downloads.openwrt.org/releases/${OPENWRT_VERSION}/targets/${TARGET}/${SUBTARGET}/${SDK_TARBALL}"
   SDK_DIR="sdk-workdir/${SDK_NAME}"
@@ -52,7 +55,7 @@ for T in "${TARGETS[@]}"; do
 
   echo "CONFIG_PACKAGE_$PACKAGE_NAME=y" >> .config
   make defconfig
-  make package/$PACKAGE_NAME/compile -j$(nproc) V=s
+  make package/$PACKAGE_NAME/compile -j$(nproc)
   cd - > /dev/null
 
   # Copy resulting IPKs to output
