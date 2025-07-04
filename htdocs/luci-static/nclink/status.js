@@ -74,29 +74,17 @@ function updateWifiStatus() {
 function updateVpnStatus() {
     callUbus('network.interface', 'dump').then(response => {
         const interfaces = response.json().interface;
-        const vpnInterface = interfaces.find(iface => iface.interface === 'wg0');
+        const vpnInterface = interfaces.find(iface => iface.interface === 'l2tp');
+        if (!vpnInterface) {
+            vpnInterface = interfaces.find(iface => iface.interface === 'wg0');
+        }
+
         
         if (vpnInterface) {
             const status = vpnInterface.up ? 'connected' : 'disconnected';
             const ipaddr = vpnInterface['ipv4-address']?.[0]?.['address'] || '-';
             const uptime = formatUptime(vpnInterface.uptime || 0);
             const type = vpnInterface.proto || '-';
-
-            // Get kill switch status
-            callUbus('uci', 'get', {config: 'firewall', section: 'vpn_killswitch'}).then(response => {
-                const killswitch = response.json() ? 'Enabled' : 'Disabled';
-                document.getElementById('vpn-killswitch').textContent = killswitch;
-            }).catch(() => {
-                document.getElementById('vpn-killswitch').textContent = 'Disabled';
-            });
-
-            // Get data transferred
-            callUbus('network.interface', 'dump').then(response => {
-                const stats = vpnInterface.statistics || {};
-                const rx = formatBytes(stats.rx_bytes || 0);
-                const tx = formatBytes(stats.tx_bytes || 0);
-                document.getElementById('vpn-data').textContent = `↓${rx} ↑${tx}`;
-            });
 
             document.getElementById('vpn-status').textContent = status;
             document.getElementById('vpn-status').className = `status-value ${status}`;
@@ -109,8 +97,7 @@ function updateVpnStatus() {
             document.getElementById('vpn-type').textContent = '-';
             document.getElementById('vpn-ip').textContent = '-';
             document.getElementById('vpn-uptime').textContent = '-';
-            document.getElementById('vpn-killswitch').textContent = 'Disabled';
-            document.getElementById('vpn-data').textContent = '-';
+
         }
     }).catch(error => {
         console.error('Failed to get VPN status:', error);
