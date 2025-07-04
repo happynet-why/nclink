@@ -51,7 +51,7 @@ for T in "${TARGETS[@]}"; do
   cp -r "$PACKAGE_DIR" "$SDK_DIR/package/"
 
   # Build inside Docker
-docker run --rm -v "$(realpath "$SDK_DIR")":/build -w /build openwrt/rootfs /bin/bash -c "
+docker run --rm -v "$(realpath "$SDK_DIR")":/build -w /build openwrt/rootfs /bin/sh -c "
     set -e
     ./scripts/feeds update -a > /dev/null
     ./scripts/feeds install -a > /dev/null
