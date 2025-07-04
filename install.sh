@@ -31,8 +31,8 @@ detect_arch() {
         "armv7l")
             echo "arm_cortex-a7_neon-vfpv4"
             ;;
-        "i686"|"i386")
-            echo "i386_pentium4"
+        "i686"|"i386"|"x86_64")
+            echo "x86_64"
             ;;
         *)
             echo "Unsupported architecture: $arch"
