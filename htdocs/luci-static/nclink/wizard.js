@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Load L2TP configuration when page loads
     const l2tpConfig = await loadL2tpConfig();
     if (l2tpConfig) {
-        if ( l2tpConfig.values.auto == "1" && l2tpConfig.values.username && l2tpConfig.values.password && l2tpConfig.values.server ) {
+        if ( l2tpConfig?.values?.auto == "1" && l2tpConfig?.values?.username && l2tpConfig?.values?.password && l2tpConfig?.values?.server ) {
             console.log('L2TP Configuration:', l2tpConfig);
             alreadySetup = true;
             setupButton.classList.remove('processing');
