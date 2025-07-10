@@ -47,9 +47,8 @@ https://github.com/happynet-why/nclink/raw/refs/heads/main/docs/video/set_root_p
 
 The easiest way to install NCLink is using our automated installation script. This script will automatically detect your device's architecture and install the correct package.
 
-<video width="100%" controls>
-  <source src="https://github.com/happynet-why/nclink/raw/refs/heads/main/docs/video/Install.mp4" type="video/mp4">
-</video>
+Watch the installation video:
+https://github.com/happynet-why/nclink/raw/refs/heads/main/docs/video/Install.mp4
 
 
 1.  open the Terminal app on your device and SSH into your OpenWrt router buy typing the following command:
