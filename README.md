@@ -2,16 +2,60 @@
 
 A community-focused networking solution for OpenWrt.
 
+## Prerequisites
+
+Before installing NCLink, ensure you have the following setup:
+
+### Hardware Requirements
+- A device that supports OpenWrt 23.05
+- You can find compatible devices and installation instructions at the [OpenWrt Firmware Selector](https://firmware-selector.openwrt.org/?version=23.05.5) (search for your device ex: Tp-link)
+
+Watch this video guide on how to select and download the correct firmware for your device:
+
+https://github.com/happynet-why/nclink/raw/main/docs/videos/select_firmware.mp4
+
+
+### OpenWrt Installation
+1. Install OpenWrt 23.05 firmware on your device following the instructions from the OpenWrt Hardware Selector
+2. Ensure your router is connected to the internet and has a stable connection
+
+### Network Configuration
+**Important**: If your Starlink router uses the same IP range (192.168.1.x) as OpenWrt's default (192.168.1.1), you must change the LAN IP range to avoid conflicts:
+
+1. Access the LuCI web interface at `http://192.168.1.1`
+2. Navigate to **Network** → **Interfaces** → **LAN**
+3. Change the IPv4 address from `192.168.1.1` to `192.168.3.1`
+4. Save and apply the changes
+5. Access the interface using the new IP: `http://192.168.3.1`
+
+Change LAN IP Video : 
+https://github.com/happynet-why/nclink/raw/main/docs/videos/change_lan_ip.mp4
+
+### Security Setup
+1. Set a strong password for the LuCI web interface:
+   - Go to **System** → **Administration**
+   - Enter a strong password in the "Password" field
+   - Save the changes
+
+Set Root password Video : 
+https://github.com/happynet-why/nclink/raw/main/docs/videos/set_root_password.mp4
+
+
 ## Installation
 
 ### Quick Installation via SSH
 
 The easiest way to install NCLink is using our automated installation script. This script will automatically detect your device's architecture and install the correct package.
 
+Installation video:
+https://github.com/happynet-why/nclink/raw/main/docs/videos/Install.mp4
+
+
 1.  open the Terminal app on your device and SSH into your OpenWrt router buy typing the following command:
    ```bash
-   ssh root@192.168.1.1 
+   ssh root@192.168.3.1 
    ```
+   If you dont change the lan ip address its 192.168.1.1
 
 2. Run the following command to download and execute the installation script:
    ```bash
@@ -31,135 +75,109 @@ The script will:
 
 After installation, you can access NCLink through the LuCI web interface under the Services menu.
 
-### How to Install via LuCI Web Interface
+## Building Custom Packages for Advanced Developers
 
-1. Add Custom Feed:
-   - Go to System → Software
-   - Click on "Configuration"
-   - Add the following feed under "Custom feeds":
-     ```
-     src/gz customrepo https://raw.githubusercontent.com/happynet-why/nclink/main/package
-     ```
-   - Click "Save & Apply"
+If you need to build NCLink for a specific architecture not included in the pre-built packages, you can use the provided Docker-based build script to create custom packages.
 
-2. Install the Package:
-   - Click "Update Lists"
-   - Search for "luci-app-nclink"
-   - Click "Install"
+### Prerequisites for Building
+- Linux system with the following packages installed:
+  - `make` - Build system
+  - `curl` - Download SDKs
+  - `tar` - Extract SDK archives
+  - `coreutils` (for `realpath`) - Required utility
+  - `gcc` and basic build tools
+- Git (to clone the repository)
+- At least 4GB of free disk space
+- Stable internet connection (to download SDKs)
 
-### Manual Installation
+### Available Target Architectures
 
-You can also install the package manually via SSH:
+The build script supports the following OpenWrt target architectures:
 
-1. Add the custom repository:
+| Target | Subtarget | Description |
+|--------|-----------|-------------|
+| `ramips` | `mt76x8` | MediaTek MT76x8 series routers |
+| `ath79` | `generic` | Qualcomm Atheros AR71xx/AR9xxx series |
+| `ipq40xx` | `generic` | Qualcomm IPQ40xx series routers |
+| `bcm27xx` | `bcm2710` | Broadcom BCM2710 (Raspberry Pi 3/4) |
+| `x86` | `64` | x86_64 compatible devices |
+
+### Customizing the Build
+
+1. **Clone the repository** (if you haven't already):
    ```bash
-   echo "src/gz customrepo https://raw.githubusercontent.com/happynet-why/nclink/main/package" >> /etc/opkg/customfeeds.conf
+   git clone https://github.com/happynet-why/nclink.git
+   cd nclink
    ```
 
-2. Update and install:
+2. **Edit the build script** to customize your target architectures:
    ```bash
-   opkg update
-   opkg install luci-app-nclink
+   nano build-using-openwrt-sdk.sh
    ```
 
+3. **Modify the TARGETS array** in the script:
+   ```bash
+   TARGETS=(
+     "ramips/mt76x8"      # Comment out or remove unwanted targets
+     # "ath79/generic"    # Comment out this line to skip this target
+     "ipq40xx/generic"    # Keep targets you want to build
+     # "bcm27xx/bcm2710" # Comment out this line to skip this target
+     "x86/64"             # Keep targets you want to build
+   )
+   ```
 
+4. **Add custom targets** if needed. To find available targets for your device:
+   - Visit [OpenWrt Hardware Selector](https://openwrt.org/toh/start)
+   - Search for your device
+   - Note the target/subtarget combination (e.g., `targets/mediatek/mt7622/subtargets/MT7622`)
 
-## Development Roadmap
+5. **Run the build script**:
+   ```bash
+   ./build-using-openwrt-sdk.sh
+   ```
 
-### Week 1: Research & Initial Development
+### Build Process Details
 
-#### Learn OpenWrt Development Basics
-- Study OpenWrt package architecture
-  - Configuration   
-  - Communication
-  - Service management
-  - init scripts
-- Explore OpenWrt's build system and package development
-- Learn about LuCI framework
-  - Lua implementation
-  - CBI framework
-  - View rendering
-  - JSON-RPC
+The build script performs the following steps for each target:
 
-#### Setup Development Environment
-- Install required dependencies
-  - SDK
-  - Toolchain
-  - quilt
-  - git
-  - make
-- Set up OpenWrt test environment
-  - Configure test device or emulator (QEMU/VM)
-  - Setup development workspace
-- Study luci-app-hello-world as reference
+1. **Downloads the appropriate OpenWrt SDK** for the target architecture
+2. **Extracts the SDK** into a temporary directory
+3. **Copies the NCLink package** into the SDK's package directory
+4. **Updates and installs feeds** to resolve dependencies
+5. **Configures the build** to include the NCLink package
+6. **Compiles the package** using the native SDK toolchain
+7. **Copies the resulting IPK** to the `packages/` directory
 
-#### Develop Basic LuCI Page
-- Create simple LuCI addon with "Hello, World!"
-- Implement LuCI menu integration
-- Test .ipk package deployment
+### Output
 
-### Week 2: Building & UI Development
+After successful compilation, you'll find the built packages in the `packages/` directory with names like:
+- `luci-app-nclink_1.2-1_ramips_mt76x8.ipk`
+- `luci-app-nclink_1.2-1_ath79_generic.ipk`
+- `luci-app-nclink_1.2-1_ipq40xx_generic.ipk`
+- etc.
 
-#### Set Up Package Repository & Build System
-- Create OpenWrt Makefile
-- Structure package (luci-app-nclink)
-- Build and test .ipk installation
+### Troubleshooting Build Issues
 
-#### Develop Initial UI
-- Design and implement LuCI interface
-- Implement configuration handling
-  - CBI model integration
-  - Form handling
-- Create basic settings and status display
+- **Out of disk space**: Ensure you have at least 4GB free space
+- **Network issues**: The script downloads SDKs (~200MB each), ensure stable internet connection
+- **Missing dependencies**: Install required packages:
+  ```bash
+  # Ubuntu/Debian
+  sudo apt install make curl tar coreutils build-essential
+  
+  # CentOS/RHEL/Fedora
+  sudo yum install make curl tar coreutils gcc
+  ```
+- **Architecture not found**: Verify the target/subtarget combination exists in OpenWrt 23.05.3
 
-### Week 3: Core Functionalities & Interaction
+### Adding New Architectures
 
-#### System Service Integration
-- Implement UBUS communication
-- Develop Lua service for core logic
-- Add JavaScript frontend interactions
+To add support for a new architecture:
 
-#### Network Interface Management
-- Create interface selection UI
-- Implement network interface detection
-- Display available interfaces (uci show network)
+1. Find the correct target/subtarget from the OpenWrt Hardware Selector
+2. Add the target to the `TARGETS` array in `build-using-docker.sh`
+3. Test the build process
+4. Submit a pull request if the new architecture works correctly
 
-#### Firewall & Routing
-- Design UI for configuration
-- Develop routing rule management
-- Implement backend scripts
+For more information about OpenWrt build system, refer to the [OpenWrt Developer Guide](https://openwrt.org/docs/guide-developer/start).
 
-### Week 4: Refinements & Compatibility
-
-#### Core Feature Completion
-- Complete VPN integration
-  - WireGuard support
-  - l2tp support
-- Implement full Kill-switch functionality
-- Ensure persistence across reboots
-
-#### Multi-Architecture Support
-- Cross-compile for multiple architectures (3-5)
-- Validate on different devices
-- Document architecture-specific considerations
-
-#### Distribution Preparation
-- Set up online repository for .ipk
-- Create comprehensive documentation
-- Write installation guides
-
-### Week 5: Release & Advanced Features
-
-#### Initial Release
-- Package nclink v1.0
-- Create changelog
-- Document release notes
-- Conduct basic user testing
-- Address critical bugs
-
-#### Enhanced Features
-- Implement guest WiFi configuration
-- Design neighbor login dashboard
-- Plan future enhancements
-
----
