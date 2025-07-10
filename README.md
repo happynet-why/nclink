@@ -10,6 +10,11 @@ Before installing NCLink, ensure you have the following setup:
 - A device that supports OpenWrt 23.05
 - You can find compatible devices and installation instructions at the [OpenWrt Firmware Selector](https://firmware-selector.openwrt.org/?version=23.05.5) (search for your device ex: Tp-link)
 
+Watch this video guide on how to select and download the correct firmware for your device:
+
+https://github.com/happynet-why/nclink/raw/main/docs/videos/select_firmware.mp4
+
+
 ### OpenWrt Installation
 1. Install OpenWrt 23.05 firmware on your device following the instructions from the OpenWrt Hardware Selector
 2. Ensure your router is connected to the internet and has a stable connection
@@ -23,6 +28,8 @@ Before installing NCLink, ensure you have the following setup:
 4. Save and apply the changes
 5. Access the interface using the new IP: `http://192.168.3.1`
 
+Change LAN IP Video : 
+https://github.com/happynet-why/nclink/raw/main/docs/videos/change_lan_ip.mp4
 
 ### Security Setup
 1. Set a strong password for the LuCI web interface:
@@ -30,11 +37,19 @@ Before installing NCLink, ensure you have the following setup:
    - Enter a strong password in the "Password" field
    - Save the changes
 
+Set Root password Video : 
+https://github.com/happynet-why/nclink/raw/main/docs/videos/set_root_password.mp4
+
+
 ## Installation
 
 ### Quick Installation via SSH
 
 The easiest way to install NCLink is using our automated installation script. This script will automatically detect your device's architecture and install the correct package.
+
+Installation video:
+https://github.com/happynet-why/nclink/raw/main/docs/videos/Install.mp4
+
 
 1.  open the Terminal app on your device and SSH into your OpenWrt router buy typing the following command:
    ```bash
